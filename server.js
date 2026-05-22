@@ -4,38 +4,30 @@ const puppeteer = require('puppeteer');
 const app = express();
 
 app.get('/plan-image', async (req, res) => {
-  const mas = req.query.mas || 'MAS-1001';
-
-  const url = `https://yannpeltier-create.github.io/plan.html?mas=${mas}`;
-
   try {
+    const mas = req.query.mas || 'MAS-000';
+
     const browser = await puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ],
-      headless: true
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true,
     });
 
     const page = await browser.newPage();
 
-    await page.setViewport({
-      width: 800,
-      height: 1000,
-      deviceScaleFactor: 2
-    });
+    await page.setViewport({ width: 800, height: 600 });
 
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.setContent(`
+      <html>
+        <body style="background:#0a0a1a;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
+          <div style="text-align:center">
+            <h1>${mas}</h1>
+            <p>Plan placeholder ✅</p>
+          </div>
+        </body>
+      </html>
+    `);
 
-    // ✅ fallback si ton canvas n'existe pas
-    await new Promise(r => setTimeout(r, 1500));
-
-    const imageBuffer = await page.screenshot({
-      fullPage: true,
-      type: 'png'
-    });
+    const imageBuffer = await page.screenshot();
 
     await browser.close();
 
