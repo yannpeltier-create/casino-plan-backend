@@ -6,12 +6,17 @@ const app = express();
 app.get('/plan-image', async (req, res) => {
   const mas = req.query.mas || 'MAS-1001';
 
-  // ⚠️ IMPORTANT : ton URL GitHub Pages
   const url = `https://yannpeltier-create.github.io/plan.html?mas=${mas}`;
 
   try {
     const browser = await puppeteer.launch({
-      args: ['--no-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ],
+      headless: true
     });
 
     const page = await browser.newPage();
@@ -24,15 +29,11 @@ app.get('/plan-image', async (req, res) => {
 
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // attend ton canvas
-    await page.waitForSelector('#planCanvas');
+    // ✅ fallback si ton canvas n'existe pas
+    await new Promise(r => setTimeout(r, 1500));
 
-    // petit délai pour laisser le halo se dessiner
-    await new Promise(r => setTimeout(r, 800));
-
-    const element = await page.$('body');
-
-    const imageBuffer = await element.screenshot({
+    const imageBuffer = await page.screenshot({
+      fullPage: true,
       type: 'png'
     });
 
@@ -42,11 +43,11 @@ app.get('/plan-image', async (req, res) => {
     res.send(imageBuffer);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Erreur génération image');
+    console.error('❌ ERROR:', err);
+    res.status(500).send('Erreur Puppeteer');
   }
 });
 
 app.listen(3000, () => {
-  console.log('Server running');
+  console.log('✅ Server running on port 3000');
 });
